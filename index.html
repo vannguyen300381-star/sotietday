@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SỔ THEO DÕI TIẾT DẠY</title>
+  
+  <!-- Font & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- SheetJS để Xuất & Nhập file Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Firebase App & Firestore SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #2563eb;
+      --primary-subtle: #eff6ff;
+      --success: #15803d;
+      --success-subtle: #dcfce7;
+      --danger: #b91c1c;
+      --danger-subtle: #fee2e2;
+      --warning: #b45309;
+      --warning-subtle: #fef3c7;
+      --neutral: #475569;
+      --border: #cbd5e1;
+      --card-bg: #ffffff;
+      --bg: #f8fafc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: #0f172a;
+      line-height: 1.4;
+      padding-bottom: 70px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px; }
+    header p { font-size: 0.75rem; opacity: 0.9; margin-top: 2px; }
+
+    .sync-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      margin-top: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+    .status-dot.syncing { background: #facc15; animation: pulse 1s infinite; }
+    .status-dot.error { background: #ef4444; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .container { max-width: 1350px; margin: 0 auto; padding: 12px; }
+
+    /* Thanh điều khiển */
+    .controls-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .selector-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .select-box {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .select-box label { font-size: 0.7rem; font-weight: 600; color: #64748b; }
+    select {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .btn-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-outline { background: white; border-color: var(--border); color: #334155; }
+    .btn-outline:hover { background: #f1f5f9; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #16a34a; }
+    .btn-active { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+
+    /* Bảng dữ liệu */
+    .table-container {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    th, td {
+      padding: 8px 10px;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
+    }
+    thead th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-top: 1px solid #cbd5e1;
+    }
+
+    /* Ghim cố định 2 cột đầu khi cuộn ngang trên điện thoại */
+    .sticky-col-1 {
+      position: sticky;
+      left: 0;
+      background: inherit;
+      z-index: 5;
+      width: 40px;
+      min-width: 40px;
+    }
+    .sticky-col-2 {
+      position: sticky;
+      left: 40px;
+      background: inherit;
+      z-index: 5;
+      text-align: left !important;
+      font-weight: 600;
+      min-width: 160px;
+    }
+    thead th.sticky-col-1, thead th.sticky-col-2 {
+      z-index: 15;
+      background: #f1f5f9;
+    }
+    tbody tr:nth-child(even) { background-color: #fcfdfe; }
+    tbody tr:hover { background-color: #f1f5f9; }
+
+    /* Ô nhập dữ liệu */
+    .input-cell {
+      width: 58px;
+      padding: 6px 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      outline: none;
+      background: #ffffff;
+      -moz-appearance: textfield;
+    }
+    .input-cell::-webkit-outer-spin-button, .input-cell::-webkit-inner-spin-button {
+      -webkit-appearance: none; margin: 0;
+    }
+    .input-cell:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+      background: #eff6ff;
+    }
+    .note-input {
+      width: 130px;
+      text-align: left;
+      font-weight: normal;
+      padding-left: 8px;
+    }
+
+    /* Hiển thị thừa thiếu */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+    .badge-thua { background: var(--success-subtle); color: var(--success); }
+    .badge-thieu { background: var(--danger-subtle); color: var(--danger); }
+    .badge-du { background: #f1f5f9; color: #64748b; }
+
+    /* Thông báo Toast */
+    .toast-box {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: slideIn 0.3s forwards;
+      pointer-events: auto;
+    }
+    .toast-success { background: #15803d; }
+    .toast-error { background: #b91c1c; }
+    .toast-info { background: #1e3a8a; }
+
+    @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* Modal cửa sổ pop-up */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-card {
+      background: white;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 650px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+    .modal-header h3 { font-size: 1.1rem; color: #1e293b; }
+    .btn-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
+
+    @media (max-width: 768px) {
+      .controls-card { flex-direction: column; align-items: stretch; }
+      .selector-group { justify-content: space-between; }
+      .btn-group { justify-content: stretch; }
+      .btn { flex: 1; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SỔ THEO DÕI TIẾT DẠY</h1>
+    <p>THEO DÕI VÀ TỔNG HỢP SỐ TIẾT DẠY HÀNG TUẦN - TỔ TOÁN TIN</p>
+    <div class="sync-status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Đang kết nối Firestore...</span>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- Thanh điều khiển tuần & nút bấm -->
+    <div class="controls-card">
+      <div class="selector-group">
+        <div class="select-box">
+          <label>HỌC KỲ</label>
+          <select id="hkSelect" onchange="changeHK(this.value)">
+            <option value="HK1">Học kỳ 1 (20 tuần)</option>
+            <option value="HK2">Học kỳ 2 (19 tuần)</option>
+          </select>
+        </div>
+
+        <div class="select-box">
+          <label>TUẦN</label>
+          <select id="tuanSelect" onchange="changeTuan(this.value)"></select>
+        </div>
+
+        <button class="btn btn-outline" onclick="prevTuan()"><i class="fa fa-chevron-left"></i> Tuần trước</button>
+        <button class="btn btn-outline" onclick="nextTuan()">Tuần sau <i class="fa fa-chevron-right"></i></button>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btnTabInput" onclick="switchView('input')"><i class="fa fa-table"></i> BẢNG NHẬP</button>
+        <button class="btn btn-outline" id="btnTabSummary" onclick="switchView('summary')"><i class="fa fa-chart-pie"></i> TỔNG HỢP</button>
+        <button class="btn btn-success" onclick="saveData(true)"><i class="fa fa-save"></i> LƯU DỮ LIỆU</button>
+        <button class="btn btn-outline" onclick="openExcelModal()"><i class="fa fa-file-excel"></i> XUẤT EXCEL</button>
+        <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()"><i class="fa fa-file-import"></i> NHẬP EXCEL</button>
+        <button class="btn btn-outline" onclick="openTeacherModal()"><i class="fa fa-user-cog"></i> DS GIÁO VIÊN</button>
+      </div>
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none" onchange="importExcelFile(this)" />
+    </div>
+
+    <!-- MÀN HÌNH 1: BẢNG NHẬP HÀNG TUẦN -->
+    <div id="viewInput">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="sticky-col-1">TT</th>
+              <th class="sticky-col-2">Giáo viên</th>
+              <th>Kiêm nhiệm</th>
+              <th>Chuẩn</th>
+              <th>Tiết KN</th>
+              <th>Tiết TKB</th>
+              <th>BD HSG</th>
+              <th>Ôn thi TN</th>
+              <th>Dạy thay</th>
+              <th>Khác</th>
+              <th>Bị trừ</th>
+              <th style="background:#e0f2fe; color:#0369a1;">Tổng tuần</th>
+              <th style="background:#e0f2fe; color:#0369a1;">Thừa/Thiếu</th>
+              <th style="background:#fef3c7; color:#92400e;">Cộng dồn dạy</th>
+              <th style="background:#fef3c7; color:#92400e;">Cộng dồn T/T</th>
+              <th>Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MÀN HÌNH 2: TỔNG HỢP LŨY KẾ -->
+    <div id="viewSummary" style="display: none;">
+      <div class="controls-card" style="background:#eff6ff; border-color:#bfdbfe;">
+        <span style="font-weight:600; color:#1e3a8a;"><i class="fa fa-info-circle"></i> BẢNG TỔNG HỢP CỘNG DỒN ĐẾN THỜI ĐIỂM HIỆN TẠI</span>
+        <span id="summarySubtitle" style="font-size:0.85rem; font-weight:600; color:#2563eb;"></span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th class="sticky-col-1">TT</th>
+              <th class="sticky-col-2">Giáo viên</th>
+              <th>Kiêm nhiệm</th>
+              <th>Chuẩn / tuần</th>
+              <th>Số tuần tính</th>
+              <th>Tổng chuẩn cần đạt</th>
+              <th style="background:#dcfce7; color:#166534;">Tổng đã dạy</th>
+              <th style="background:#dcfce7; color:#166534;">Tổng Thừa/Thiếu</th>
+              <th>Tỉ lệ hoàn thành</th>
+              <th>TB tiết / tuần</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL: XUẤT EXCEL -->
+  <div class="modal-overlay" id="excelModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa fa-file-excel" style="color:#15803d;"></i> LỰA CHỌN XUẤT FILE EXCEL</h3>
+        <button class="btn-close" onclick="closeModal('excelModal')">&times;</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button class="btn btn-outline" style="padding:14px; text-align:left; justify-content:flex-start;" onclick="exportExcelWeekly()">
+          <div>
+            <strong>1. Xuất dữ liệu tuần đang xem</strong>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:2px;">Xuất toàn bộ bảng tính của tuần đang mở ra file Excel độc lập.</p>
+          </div>
+        </button>
+        <button class="btn btn-primary" style="padding:14px; text-align:left; justify-content:flex-start;" onclick="exportExcelSemester()">
+          <div>
+            <strong>2. Xuất tổng hợp toàn bộ Học kỳ (Khuyên dùng)</strong>
+            <p style="font-size:0.75rem; opacity:0.9; margin-top:2px;">Tạo file Excel chuẩn với 3 sheet: SHEET 1 (Tổng hợp), SHEET 2 (Chi tiết tuần), SHEET 3 (Bảng theo tuần).</p>
+          </div>
+        </button>
+        <button class="btn btn-outline" style="padding:14px; text-align:left; justify-content:flex-start;" onclick="exportFullBackup()">
+          <div>
+            <strong>3. Xuất toàn bộ dữ liệu dự phòng (Backup)</strong>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:2px;">Xuất cả HK1 và HK2 để lưu trữ máy tính hoặc khôi phục khi cần.</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: QUẢN LÝ GIÁO VIÊN -->
+  <div class="modal-overlay" id="teacherModal">
+    <div class="modal-card" style="max-width:700px;">
+      <div class="modal-header">
+        <h3><i class="fa fa-user-cog" style="color:var(--primary);"></i> QUẢN LÝ DANH SÁCH GIÁO VIÊN</h3>
+        <button class="btn-close" onclick="closeModal('teacherModal')">&times;</button>
+      </div>
+
+      <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="newTenGV" placeholder="Họ và tên GV" style="flex:2; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
+        <input type="text" id="newKiemNhiem" placeholder="Kiêm nhiệm" style="flex:1.5; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
+        <input type="number" id="newChuan" placeholder="Chuẩn" value="17" style="width:70px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
+        <button class="btn btn-primary" onclick="addTeacher()"><i class="fa fa-plus"></i> Thêm</button>
+      </div>
+
+      <div class="table-container" style="max-height:350px;">
+        <table>
+          <thead>
+            <tr>
+              <th>TT</th>
+              <th>Giáo viên</th>
+              <th>Kiêm nhiệm</th>
+              <th>Chuẩn</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="teacherTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-box" id="toastBox"></div>
+
+  <script>
+    // --- 1. CẤU HÌNH FIREBASE CLOUD DATABASE ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDMcvw3Xz5v5GCUojOeAFq4xnrfLA1LSV8",
+      authDomain: "theodoitietdaytoantin.firebaseapp.com",
+      projectId: "theodoitietdaytoantin",
+      storageBucket: "theodoitietdaytoantin.firebasestorage.app",
+      messagingSenderId: "765045345927",
+      appId: "1:765045345927:web:ef659830402fd3110b7222",
+      measurementId: "G-16K8HJYGCV"
+    };
+
+    let db = null;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+    } catch (e) {
+      console.warn("Lỗi khởi tạo Firebase:", e);
+    }
+
+    // --- 2. DỮ LIỆU BAN ĐẦU ---
+    const INITIAL_TEACHERS = [
+      { id: 1, name: "Đỗ Ngọc Lâm", role: "Tổ trưởng CM", standard: 17 },
+      { id: 2, name: "Nguyễn Thị Cẩm Tú", role: "Không", standard: 17 },
+      { id: 3, name: "Nguyễn Thị Vân", role: "CN 11A1", standard: 17 },
+      { id: 4, name: "Phan Thị Huyền", role: "CN 10A8", standard: 17 },
+      { id: 5, name: "Trần Thu Hằng", role: "Không", standard: 17 },
+      { id: 6, name: "Ngô Công Hữu", role: "Không", standard: 17 },
+      { id: 7, name: "Nguyễn Thị Phúc (T)", role: "CN 10A2", standard: 17 },
+      { id: 8, name: "Hồ Sĩ Thường", role: "Không", standard: 17 },
+      { id: 9, name: "Phan Văn Thế", role: "TPCM", standard: 17 },
+      { id: 10, name: "Dương Quang Hưng", role: "Không", standard: 19 },
+      { id: 11, name: "Nguyễn Thị Thùy Lê", role: "CN 9C, TPCM", standard: 19 },
+      { id: 12, name: "Nguyễn Thị Thắng", role: "CN 8E", standard: 19 },
+      { id: 13, name: "Lưu Thị Loan", role: "CN 8B", standard: 19 },
+      { id: 14, name: "Đậu Thị Thanh Mai", role: "CN 9B", standard: 19 },
+      { id: 15, name: "Ngô Thanh Sơn", role: "Không", standard: 19 },
+      { id: 16, name: "Trần Thị Việt Hồng", role: "CN 6C", standard: 19 },
+      { id: 17, name: "Mai Thị Thủy", role: "Không", standard: 19 }
+    ];
+
+    let currentHK = "HK1";
+    let currentTuan = 4;
+    let teachers = JSON.parse(localStorage.getItem('teachers_data')) || INITIAL_TEACHERS;
+    let semesterData = JSON.parse(localStorage.getItem('semester_records')) || { HK1: {}, HK2: {} };
+
+    // --- 3. KHỞI TẠO & ĐỒNG BỘ THỜI GIAN THỰC (FIRESTORE) ---
+    window.addEventListener('DOMContentLoaded', () => {
+      buildTuanOptions();
+      renderTable();
+      initFirestoreSync();
+    });
+
+    function initFirestoreSync() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+
+      if (!db) {
+        dot.className = "status-dot error";
+        text.innerText = "Dùng Offline (Chưa kết nối Cloud)";
+        return;
+      }
+
+      dot.className = "status-dot syncing";
+      text.innerText = "Đang kết nối Cloud...";
+
+      // Lắng nghe dữ liệu thời gian thực từ Firestore
+      db.collection("truong_thpt").doc("du_lieu_so_tiet")
+        .onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data.teachers) teachers = data.teachers;
+            if (data.semesterData) semesterData = data.semesterData;
+
+            localStorage.setItem('teachers_data', JSON.stringify(teachers));
+            localStorage.setItem('semester_records', JSON.stringify(semesterData));
+
+            dot.className = "status-dot";
+            text.innerText = "Đồng bộ đám mây: Trực tuyến";
+            renderTable();
+          } else {
+            // Lần đầu khởi tạo dữ liệu lên server
+            saveData(false);
+            dot.className = "status-dot";
+            text.innerText = "Đã khởi tạo Cloud";
+          }
+        }, (err) => {
+          console.error("Firestore Listen Error: ", err);
+          dot.className = "status-dot error";
+          text.innerText = "Mất kết nối Cloud (Lưu bộ nhớ tạm)";
+        });
+    }
+
+    function buildTuanOptions() {
+      const maxTuans = currentHK === 'HK1' ? 20 : 19;
+      const select = document.getElementById('tuanSelect');
+      select.innerHTML = '';
+      for (let i = 1; i <= maxTuans; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = `Tuần ${i}`;
+        if (i === currentTuan) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
+    function changeHK(val) {
+      currentHK = val;
+      currentTuan = 1;
+      buildTuanOptions();
+      renderTable();
+    }
+
+    function changeTuan(val) {
+      currentTuan = parseInt(val);
+      renderTable();
+    }
+
+    function prevTuan() {
+      if (currentTuan > 1) {
+        currentTuan--;
+        document.getElementById('tuanSelect').value = currentTuan;
+        renderTable();
+      }
+    }
+
+    function nextTuan() {
+      const maxTuans = currentHK === 'HK1' ? 20 : 19;
+      if (currentTuan < maxTuans) {
+        currentTuan++;
+        document.getElementById('tuanSelect').value = currentTuan;
+        renderTable();
+      }
+    }
+
+    function switchView(view) {
+      const vInput = document.getElementById('viewInput');
+      const vSummary = document.getElementById('viewSummary');
+      const bInput = document.getElementById('btnTabInput');
+      const bSummary = document.getElementById('btnTabSummary');
+
+      if (view === 'input') {
+        vInput.style.display = 'block';
+        vSummary.style.display = 'none';
+        bInput.className = 'btn btn-primary';
+        bSummary.className = 'btn btn-outline';
+        renderTable();
+      } else {
+        vInput.style.display = 'none';
+        vSummary.style.display = 'block';
+        bInput.className = 'btn btn-outline';
+        bSummary.className = 'btn btn-primary';
+        renderSummaryTable();
+      }
+    }
+
+    // --- 4. TÍNH CỘNG DỒN LŨY KẾ ---
+    function getCumulativeData(teacherId, upToTuan) {
+      let totalDay = 0;
+      let totalThuaThieu = 0;
+      const teacher = teachers.find(t => t.id === teacherId);
+      const chuan = teacher ? teacher.standard : 17;
+
+      if (!semesterData[currentHK]) semesterData[currentHK] = {};
+
+      for (let w = 1; w <= upToTuan; w++) {
+        const weekData = semesterData[currentHK][w] || {};
+        const row = weekData[teacherId];
+        if (row) {
+          const tongTuan = (parseFloat(row.kn) || 0) +
+                           (parseFloat(row.tkb) || 0) +
+                           (parseFloat(row.hsg) || 0) +
+                           (parseFloat(row.tn) || 0) +
+                           (parseFloat(row.thay) || 0) +
+                           (parseFloat(row.khac) || 0) -
+                           (parseFloat(row.tru) || 0);
+          totalDay += tongTuan;
+          totalThuaThieu += (tongTuan - chuan);
+        } else {
+          totalThuaThieu -= chuan;
+        }
+      }
+      return { totalDay, totalThuaThieu };
+    }
+
+    // --- 5. RENDER BẢNG NHẬP SỐ TIẾT ---
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      if (!semesterData[currentHK]) semesterData[currentHK] = {};
+      if (!semesterData[currentHK][currentTuan]) semesterData[currentHK][currentTuan] = {};
+      const currentWeekData = semesterData[currentHK][currentTuan];
+
+      teachers.forEach((t, idx) => {
+        const r = currentWeekData[t.id] || { kn: '', tkb: '', hsg: '', tn: '', thay: '', khac: '', tru: '', note: '' };
+
+        const kn = parseFloat(r.kn) || 0;
+        const tkb = parseFloat(r.tkb) || 0;
+        const hsg = parseFloat(r.hsg) || 0;
+        const tn = parseFloat(r.tn) || 0;
+        const thay = parseFloat(r.thay) || 0;
+        const khac = parseFloat(r.khac) || 0;
+        const tru = parseFloat(r.tru) || 0;
+
+        const tong = kn + tkb + hsg + tn + thay + khac - tru;
+        const thuaThieu = tong - t.standard;
+
+        const cum = getCumulativeData(t.id, currentTuan);
+
+        const badgeClass = thuaThieu > 0 ? 'badge-thua' : (thuaThieu < 0 ? 'badge-thieu' : 'badge-du');
+        const sign = thuaThieu > 0 ? '+' : '';
+        const cumSign = cum.totalThuaThieu > 0 ? '+' : '';
+        const cumBadgeClass = cum.totalThuaThieu > 0 ? 'badge-thua' : (cum.totalThuaThieu < 0 ? 'badge-thieu' : 'badge-du');
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="sticky-col-1">${idx + 1}</td>
+          <td class="sticky-col-2">${t.name}</td>
+          <td style="color:#64748b;">${t.role}</td>
+          <td><strong>${t.standard}</strong></td>
+          <td><input type="number" step="0.5" class="input-cell" value="${r.kn !== '' ? r.kn : ''}" onchange="updateCell(${t.id}, 'kn', this.value)" /></td>
+          <td><input type="number" step="0.5" class="input-cell" value="${r.tkb !== '' ? r.tkb : ''}" onchange="updateCell(${t.id}, 'tkb', this.value)" /></td>
+          <td><input type="number" step="0.5" class="input-cell" value="${r.hsg !== '' ? r.hsg : ''}" onchange="updateCell(${t.id}, 'hsg', this.value)" /></td>
+          <td><input type="number" step="0.5" class="input-cell" value="${r.tn !== '' ? r.tn : ''}" onchange="updateCell(${t.id}, 'tn', this.value)" /></td>
+          <td><input type="number" step="0.5" class="input-cell" value="${r.thay !== '' ? r.thay : ''}" onchange="updateCell(${t.id}, 'thay', this.value)" /></td>
+          <td><input type="number" step="0.5" class="input-cell" value="${r.khac !== '' ? r.khac : ''}" onchange="updateCell(${t.id}, 'khac', this.value)" /></td>
+          <td><input type="number" step="0.5" class="input-cell" style="color:#b91c1c;" value="${r.tru !== '' ? r.tru : ''}" onchange="updateCell(${t.id}, 'tru', this.value)" /></td>
+          <td style="font-weight:700; background:#f0fdf4;">${tong > 0 ? tong : (tong === 0 && (r.kn!==''||r.tkb!=='') ? 0 : '')}</td>
+          <td><span class="badge ${badgeClass}">${tong === 0 && r.kn==='' && r.tkb==='' ? '' : sign + thuaThieu}</span></td>
+          <td style="font-weight:700; color:#1e40af;">${cum.totalDay}</td>
+          <td><span class="badge ${cumBadgeClass}">${cumSign + cum.totalThuaThieu}</span></td>
+          <td><input type="text" class="input-cell note-input" value="${r.note || ''}" onchange="updateCell(${t.id}, 'note', this.value)" /></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateCell(teacherId, field, value) {
+      if (!semesterData[currentHK]) semesterData[currentHK] = {};
+      if (!semesterData[currentHK][currentTuan]) semesterData[currentHK][currentTuan] = {};
+      if (!semesterData[currentHK][currentTuan][teacherId]) {
+        semesterData[currentHK][currentTuan][teacherId] = { kn:'', tkb:'', hsg:'', tn:'', thay:'', khac:'', tru:'', note:'' };
+      }
+      semesterData[currentHK][currentTuan][teacherId][field] = value;
+      renderTable();
+    }
+
+    // --- 6. RENDER BẢNG TỔNG HỢP ---
+    function renderSummaryTable() {
+      const tbody = document.getElementById('summaryTableBody');
+      tbody.innerHTML = '';
+      document.getElementById('summarySubtitle').innerText = `${currentHK} - Lũy kế từ Tuần 1 đến Tuần ${currentTuan}`;
+
+      teachers.forEach((t, idx) => {
+        const cum = getCumulativeData(t.id, currentTuan);
+        const tongChuan = t.standard * currentTuan;
+        const pt = tongChuan > 0 ? Math.round((cum.totalDay / tongChuan) * 100) : 0;
+        const tb = (cum.totalDay / currentTuan).toFixed(1);
+        const cumBadgeClass = cum.totalThuaThieu > 0 ? 'badge-thua' : (cum.totalThuaThieu < 0 ? 'badge-thieu' : 'badge-du');
+        const sign = cum.totalThuaThieu > 0 ? '+' : '';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="sticky-col-1">${idx + 1}</td>
+          <td class="sticky-col-2">${t.name}</td>
+          <td style="color:#64748b;">${t.role}</td>
+          <td>${t.standard}</td>
+          <td>${currentTuan}</td>
+          <td><strong>${tongChuan}</strong></td>
+          <td style="font-weight:700; color:#15803d; font-size:0.95rem;">${cum.totalDay}</td>
+          <td><span class="badge ${cumBadgeClass}">${sign + cum.totalThuaThieu}</span></td>
+          <td><strong>${pt}%</strong></td>
+          <td>${tb}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- 7. LƯU DỮ LIỆU LÊN FIRESTORE & LOCALSTORAGE ---
+    async function saveData(showToastMsg = true) {
+      localStorage.setItem('teachers_data', JSON.stringify(teachers));
+      localStorage.setItem('semester_records', JSON.stringify(semesterData));
+
+      if (db) {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        dot.className = "status-dot syncing";
+        text.innerText = "Đang lưu lên Cloud...";
+
+        try {
+          await db.collection("truong_thpt").doc("du_lieu_so_tiet").set({
+            teachers: teachers,
+            semesterData: semesterData,
+            lastUpdated: new Date().toISOString()
+          });
+          dot.className = "status-dot";
+          text.innerText = "Đồng bộ đám mây: Trực tuyến";
+          if (showToastMsg) showToast("Đã lưu dữ liệu thành công lên hệ thống chung!", "success");
+        } catch (e) {
+          console.error(e);
+          dot.className = "status-dot error";
+          text.innerText = "Lỗi lưu đám mây";
+          if (showToastMsg) showToast("Không thể lưu lên Cloud. Đã lưu tạm vào máy!", "error");
+        }
+      } else {
+        if (showToastMsg) showToast("Đã lưu vào bộ nhớ trình duyệt.", "info");
+      }
+    }
+
+    // --- 8. QUẢN LÝ DANH SÁCH GIÁO VIÊN ---
+    function openTeacherModal() {
+      renderTeacherList();
+      document.getElementById('teacherModal').style.display = 'flex';
+    }
+
+    function renderTeacherList() {
+      const tbody = document.getElementById('teacherTableBody');
+      tbody.innerHTML = '';
+      teachers.forEach((t, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td style="text-align:left;"><strong>${t.name}</strong></td>
+          <td>${t.role}</td>
+          <td>${t.standard}</td>
+          <td>
+            <button class="btn btn-outline" style="padding:4px 8px;" onclick="moveTeacher(${i}, -1)"><i class="fa fa-arrow-up"></i></button>
+            <button class="btn btn-outline" style="padding:4px 8px;" onclick="moveTeacher(${i}, 1)"><i class="fa fa-arrow-down"></i></button>
+            <button class="btn btn-outline" style="padding:4px 8px; color:#b91c1c;" onclick="deleteTeacher(${t.id})"><i class="fa fa-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addTeacher() {
+      const name = document.getElementById('newTenGV').value.trim();
+      const role = document.getElementById('newKiemNhiem').value.trim() || 'Không';
+      const standard = parseFloat(document.getElementById('newChuan').value) || 17;
+      if (!name) { showToast("Vui lòng nhập tên giáo viên!", "error"); return; }
+
+      teachers.push({ id: Date.now(), name, role, standard });
+      document.getElementById('newTenGV').value = '';
+      document.getElementById('newKiemNhiem').value = '';
+      renderTeacherList();
+      renderTable();
+      saveData(false);
+      showToast("Đã thêm giáo viên thành công!", "success");
+    }
+
+    function deleteTeacher(id) {
+      if (confirm("Thầy/cô có chắc muốn xóa giáo viên này khỏi danh sách?")) {
+        teachers = teachers.filter(t => t.id !== id);
+        renderTeacherList();
+        renderTable();
+        saveData(false);
+      }
+    }
+
+    function moveTeacher(index, step) {
+      const newIdx = index + step;
+      if (newIdx < 0 || newIdx >= teachers.length) return;
+      const temp = teachers[index];
+      teachers[index] = teachers[newIdx];
+      teachers[newIdx] = temp;
+      renderTeacherList();
+      renderTable();
+      saveData(false);
+    }
+
+    // --- 9. XUẤT EXCEL (3 SHEET CHUẨN) ---
+    function openExcelModal() { document.getElementById('excelModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function exportExcelWeekly() {
+      const data = [
+        ["BẢNG TỔNG HỢP SỐ TIẾT DẠY + KIÊM NHIỆM", "", "", "", "", `${currentHK} - TUẦN ${currentTuan}`],
+        ["TT", "Giáo viên", "Kiêm nhiệm", "Chuẩn", "Tiết KN", "Tiết TKB", "BD HSG", "Ôn thi tn", "Dạy thay", "Khác", "Bị trừ", "Tổng", "Thừa/Thiếu", "Ghi chú"]
+      ];
+
+      const weekData = (semesterData[currentHK] && semesterData[currentHK][currentTuan]) ? semesterData[currentHK][currentTuan] : {};
+      teachers.forEach((t, i) => {
+        const r = weekData[t.id] || {};
+        const kn = parseFloat(r.kn) || 0;
+        const tkb = parseFloat(r.tkb) || 0;
+        const hsg = parseFloat(r.hsg) || 0;
+        const tn = parseFloat(r.tn) || 0;
+        const thay = parseFloat(r.thay) || 0;
+        const khac = parseFloat(r.khac) || 0;
+        const tru = parseFloat(r.tru) || 0;
+        const tong = kn + tkb + hsg + tn + thay + khac - tru;
+        const tt = tong - t.standard;
+
+        data.push([
+          i + 1, t.name, t.role, t.standard,
+          r.kn !== undefined ? r.kn : "",
+          r.tkb !== undefined ? r.tkb : "",
+          r.hsg !== undefined ? r.hsg : "",
+          r.tn !== undefined ? r.tn : "",
+          r.thay !== undefined ? r.thay : "",
+          r.khac !== undefined ? r.khac : "",
+          r.tru !== undefined ? r.tru : "",
+          tong, tt, r.note || ""
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `Tuan_${currentTuan}`);
+      XLSX.writeFile(wb, `SoTietDay_${currentHK}_Tuan_${currentTuan}.xlsx`);
+      closeModal('excelModal');
+      showToast("Đã xuất Excel tuần thành công!", "success");
+    }
+
+    function exportExcelSemester() {
+      const wb = XLSX.utils.book_new();
+      const maxTuans = currentHK === 'HK1' ? 20 : 19;
+
+      // SHEET 1: TỔNG HỢP
+      const s1Data = [
+        ["BẢNG TỔNG HỢP TIẾT DẠY LŨY KẾ TOÀN HỌC KỲ", "", "", "", `${currentHK}`],
+        ["TT", "Giáo viên", "Kiêm nhiệm", "Chuẩn/tuần", "Tổng chuẩn học kỳ", "Tổng đã dạy", "Tổng Thừa/Thiếu", "Tỉ lệ hoàn thành"]
+      ];
+      teachers.forEach((t, i) => {
+        const cum = getCumulativeData(t.id, maxTuans);
+        const tongChuan = t.standard * maxTuans;
+        const pt = tongChuan > 0 ? (cum.totalDay / tongChuan * 100).toFixed(1) + "%" : "0%";
+        s1Data.push([i + 1, t.name, t.role, t.standard, tongChuan, cum.totalDay, cum.totalThuaThieu, pt]);
+      });
+      const ws1 = XLSX.utils.aoa_to_sheet(s1Data);
+      XLSX.utils.book_append_sheet(wb, ws1, "TONG_HOP");
+
+      // SHEET 2: CHI TIẾT THEO TUẦN
+      const s2Data = [
+        ["Giáo viên", "Học kỳ", "Tuần", "Tiết KN", "Tiết TKB", "BD HSG", "Ôn thi TN", "Dạy thay", "Khác", "Bị trừ", "Tổng", "Thừa/Thiếu", "Ghi chú"]
+      ];
+      for (let w = 1; w <= maxTuans; w++) {
+        const wData = (semesterData[currentHK] && semesterData[currentHK][w]) ? semesterData[currentHK][w] : {};
+        teachers.forEach(t => {
+          const r = wData[t.id] || {};
+          const kn = parseFloat(r.kn) || 0;
+          const tkb = parseFloat(r.tkb) || 0;
+          const hsg = parseFloat(r.hsg) || 0;
+          const tn = parseFloat(r.tn) || 0;
+          const thay = parseFloat(r.thay) || 0;
+          const khac = parseFloat(r.khac) || 0;
+          const tru = parseFloat(r.tru) || 0;
+          const tong = kn + tkb + hsg + tn + thay + khac - tru;
+          const tt = tong - t.standard;
+          s2Data.push([t.name, currentHK, w, r.kn||0, r.tkb||0, r.hsg||0, r.tn||0, r.thay||0, r.khac||0, r.tru||0, tong, tt, r.note||""]);
+        });
+      }
+      const ws2 = XLSX.utils.aoa_to_sheet(s2Data);
+      XLSX.utils.book_append_sheet(wb, ws2, "CHI_TIET_TUAN");
+
+      // SHEET 3: BẢNG THEO TUẦN ĐANG XEM
+      const s3Data = [
+        [`BẢNG THEO DÕI TIẾT DẠY TUẦN ${currentTuan}`, "", "", "", "", `${currentHK}`],
+        ["TT", "Giáo viên", "Kiêm nhiệm", "Chuẩn", "Tiết KN", "Tiết TKB", "BD HSG", "Ôn thi tn", "Dạy thay", "Khác", "Bị trừ", "Tổng", "Thừa/Thiếu", "Ghi chú"]
+      ];
+      const curWData = (semesterData[currentHK] && semesterData[currentHK][currentTuan]) ? semesterData[currentHK][currentTuan] : {};
+      teachers.forEach((t, i) => {
+        const r = curWData[t.id] || {};
+        const kn = parseFloat(r.kn) || 0;
+        const tkb = parseFloat(r.tkb) || 0;
+        const hsg = parseFloat(r.hsg) || 0;
+        const tn = parseFloat(r.tn) || 0;
+        const thay = parseFloat(r.thay) || 0;
+        const khac = parseFloat(r.khac) || 0;
+        const tru = parseFloat(r.tru) || 0;
+        const tong = kn + tkb + hsg + tn + thay + khac - tru;
+        s3Data.push([i+1, t.name, t.role, t.standard, r.kn||"", r.tkb||"", r.hsg||"", r.tn||"", r.thay||"", r.khac||"", r.tru||"", tong, tong - t.standard, r.note||""]);
+      });
+      const ws3 = XLSX.utils.aoa_to_sheet(s3Data);
+      XLSX.utils.book_append_sheet(wb, ws3, `BANG_TUAN_${currentTuan}`);
+
+      XLSX.writeFile(wb, `SoTietDay_TongHop_${currentHK}.xlsx`);
+      closeModal('excelModal');
+      showToast("Đã xuất File Excel 3 Sheet thành công!", "success");
+    }
+
+    function exportFullBackup() {
+      const backupObj = { teachers, semesterData, exportDate: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SaoLuu_SoTietDay_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      closeModal('excelModal');
+      showToast("Đã xuất tệp sao lưu an toàn!", "success");
+    }
+
+    // --- 10. NHẬP EXCEL & KHÔI PHỤC ---
+    function importExcelFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      if (!confirm("Dữ liệu nhập vào có thể thay thế dữ liệu hiện tại. Bạn có chắc chắn muốn tiếp tục?")) {
+        input.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          if (!semesterData[currentHK]) semesterData[currentHK] = {};
+          if (!semesterData[currentHK][currentTuan]) semesterData[currentHK][currentTuan] = {};
+
+          for (let i = 2; i < rows.length; i++) {
+            const r = rows[i];
+            if (!r || !r[1]) continue;
+            const tName = String(r[1]).trim();
+            const teacher = teachers.find(t => t.name.toLowerCase() === tName.toLowerCase());
+            if (teacher) {
+              semesterData[currentHK][currentTuan][teacher.id] = {
+                kn: r[4] !== undefined ? r[4] : '',
+                tkb: r[5] !== undefined ? r[5] : '',
+                hsg: r[6] !== undefined ? r[6] : '',
+                tn: r[7] !== undefined ? r[7] : '',
+                thay: r[8] !== undefined ? r[8] : '',
+                khac: r[9] !== undefined ? r[9] : '',
+                tru: r[10] !== undefined ? r[10] : '',
+                note: r[13] || ''
+              };
+            }
+          }
+
+          renderTable();
+          saveData(true);
+          showToast("Nhập dữ liệu từ Excel thành công!", "success");
+        } catch (err) {
+          console.error(err);
+          showToast("Không thể đọc tệp Excel này. Vui lòng kiểm tra định dạng!", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      input.value = "";
+    }
+
+    function showToast(msg, type = "info") {
+      const box = document.getElementById('toastBox');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerText = msg;
+      box.appendChild(toast);
+      setTimeout(() => { toast.remove(); }, 3500);
+    }
+  </script>
+</body>
+</html>
