@@ -5,16 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SỔ THEO DÕI TIẾT DẠY</title>
   
-  <!-- Font & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- SheetJS để Xuất & Nhập file Excel -->
+  <!-- SheetJS -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- Firebase App & Firestore SDK -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
@@ -22,14 +21,10 @@
     :root {
       --primary: #1e3a8a;
       --primary-light: #2563eb;
-      --primary-subtle: #eff6ff;
       --success: #15803d;
       --success-subtle: #dcfce7;
       --danger: #b91c1c;
       --danger-subtle: #fee2e2;
-      --warning: #b45309;
-      --warning-subtle: #fef3c7;
-      --neutral: #475569;
       --border: #cbd5e1;
       --card-bg: #ffffff;
       --bg: #f8fafc;
@@ -47,26 +42,26 @@
     header {
       background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
       color: white;
-      padding: 16px;
+      padding: 14px 16px;
       text-align: center;
       position: sticky;
       top: 0;
       z-index: 40;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px; }
+    header h1 { font-size: 1.25rem; font-weight: 700; }
     header p { font-size: 0.75rem; opacity: 0.9; margin-top: 2px; }
 
     .sync-status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 9999px;
       font-size: 0.72rem;
       margin-top: 6px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
     }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
     .status-dot.syncing { background: #facc15; animation: pulse 1s infinite; }
@@ -74,9 +69,8 @@
 
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    .container { max-width: 1350px; margin: 0 auto; padding: 12px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 12px; }
 
-    /* Thanh điều khiển */
     .controls-card {
       background: var(--card-bg);
       border-radius: 12px;
@@ -91,28 +85,18 @@
       justify-content: space-between;
     }
 
-    .selector-group {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .select-box {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
+    .selector-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .select-box { display: flex; flex-direction: column; gap: 2px; }
     .select-box label { font-size: 0.7rem; font-weight: 600; color: #64748b; }
     select {
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
-      padding: 8px 12px;
+      padding: 7px 10px;
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 600;
       color: #1e293b;
       outline: none;
-      cursor: pointer;
     }
 
     .btn-group { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -120,7 +104,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 14px;
+      padding: 8px 13px;
       border-radius: 8px;
       font-size: 0.82rem;
       font-weight: 600;
@@ -129,14 +113,10 @@
       transition: all 0.2s;
     }
     .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-light); }
     .btn-outline { background: white; border-color: var(--border); color: #334155; }
-    .btn-outline:hover { background: #f1f5f9; }
     .btn-success { background: var(--success); color: white; }
     .btn-success:hover { background: #16a34a; }
-    .btn-active { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
 
-    /* Bảng dữ liệu */
     .table-container {
       background: var(--card-bg);
       border-radius: 12px;
@@ -146,12 +126,7 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.04);
       margin-bottom: 12px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-      white-space: nowrap;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
     th, td {
       padding: 8px 10px;
       text-align: center;
@@ -165,35 +140,15 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      border-top: 1px solid #cbd5e1;
     }
 
-    /* Ghim cố định 2 cột đầu khi cuộn ngang trên điện thoại */
-    .sticky-col-1 {
-      position: sticky;
-      left: 0;
-      background: inherit;
-      z-index: 5;
-      width: 40px;
-      min-width: 40px;
-    }
-    .sticky-col-2 {
-      position: sticky;
-      left: 40px;
-      background: inherit;
-      z-index: 5;
-      text-align: left !important;
-      font-weight: 600;
-      min-width: 160px;
-    }
-    thead th.sticky-col-1, thead th.sticky-col-2 {
-      z-index: 15;
-      background: #f1f5f9;
-    }
+    .sticky-col-1 { position: sticky; left: 0; background: inherit; z-index: 5; width: 40px; min-width: 40px; }
+    .sticky-col-2 { position: sticky; left: 40px; background: inherit; z-index: 5; text-align: left !important; font-weight: 600; min-width: 160px; }
+    thead th.sticky-col-1, thead th.sticky-col-2 { z-index: 15; background: #f1f5f9; }
+
     tbody tr:nth-child(even) { background-color: #fcfdfe; }
     tbody tr:hover { background-color: #f1f5f9; }
 
-    /* Ô nhập dữ liệu */
     .input-cell {
       width: 58px;
       padding: 6px 4px;
@@ -204,36 +159,19 @@
       font-weight: 600;
       outline: none;
       background: #ffffff;
-      -moz-appearance: textfield;
-    }
-    .input-cell::-webkit-outer-spin-button, .input-cell::-webkit-inner-spin-button {
-      -webkit-appearance: none; margin: 0;
     }
     .input-cell:focus {
       border-color: var(--primary-light);
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
       background: #eff6ff;
     }
-    .note-input {
-      width: 130px;
-      text-align: left;
-      font-weight: normal;
-      padding-left: 8px;
-    }
+    .note-input { width: 130px; text-align: left; font-weight: normal; padding-left: 8px; }
 
-    /* Hiển thị thừa thiếu */
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 0.82rem;
-    }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.82rem; }
     .badge-thua { background: var(--success-subtle); color: var(--success); }
     .badge-thieu { background: var(--danger-subtle); color: var(--danger); }
     .badge-du { background: #f1f5f9; color: #64748b; }
 
-    /* Thông báo Toast */
     .toast-box {
       position: fixed;
       bottom: 20px;
@@ -260,7 +198,6 @@
 
     @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-    /* Modal cửa sổ pop-up */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -279,7 +216,6 @@
       max-height: 90vh;
       overflow-y: auto;
       padding: 20px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
     }
     .modal-header {
       display: flex;
@@ -289,13 +225,11 @@
       border-bottom: 1px solid #e2e8f0;
       padding-bottom: 10px;
     }
-    .modal-header h3 { font-size: 1.1rem; color: #1e293b; }
     .btn-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
 
     @media (max-width: 768px) {
       .controls-card { flex-direction: column; align-items: stretch; }
       .selector-group { justify-content: space-between; }
-      .btn-group { justify-content: stretch; }
       .btn { flex: 1; justify-content: center; }
     }
   </style>
@@ -306,14 +240,12 @@
     <h1>SỔ THEO DÕI TIẾT DẠY</h1>
     <p>THEO DÕI VÀ TỔNG HỢP SỐ TIẾT DẠY HÀNG TUẦN - TỔ TOÁN TIN</p>
     <div class="sync-status">
-      <span class="status-dot" id="statusDot"></span>
-      <span id="statusText">Đang kết nối Firestore...</span>
+      <span class="status-dot syncing" id="statusDot"></span>
+      <span id="statusText">Đang tải dữ liệu từ Cloud...</span>
     </div>
   </header>
 
   <div class="container">
-    
-    <!-- Thanh điều khiển tuần & nút bấm -->
     <div class="controls-card">
       <div class="selector-group">
         <div class="select-box">
@@ -336,15 +268,16 @@
       <div class="btn-group">
         <button class="btn btn-primary" id="btnTabInput" onclick="switchView('input')"><i class="fa fa-table"></i> BẢNG NHẬP</button>
         <button class="btn btn-outline" id="btnTabSummary" onclick="switchView('summary')"><i class="fa fa-chart-pie"></i> TỔNG HỢP</button>
-        <button class="btn btn-success" onclick="saveData(true)"><i class="fa fa-save"></i> LƯU DỮ LIỆU</button>
+        <button class="btn btn-success" onclick="saveDataManual()"><i class="fa fa-save"></i> LƯU DỮ LIỆU</button>
         <button class="btn btn-outline" onclick="openExcelModal()"><i class="fa fa-file-excel"></i> XUẤT EXCEL</button>
         <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()"><i class="fa fa-file-import"></i> NHẬP EXCEL</button>
         <button class="btn btn-outline" onclick="openTeacherModal()"><i class="fa fa-user-cog"></i> DS GIÁO VIÊN</button>
+        <button class="btn btn-outline" title="Tải lại từ máy chủ" onclick="fetchLatestData()"><i class="fa fa-sync-alt"></i></button>
       </div>
       <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none" onchange="importExcelFile(this)" />
     </div>
 
-    <!-- MÀN HÌNH 1: BẢNG NHẬP HÀNG TUẦN -->
+    <!-- MÀN HÌNH 1: BẢNG NHẬP -->
     <div id="viewInput">
       <div class="table-container">
         <table>
@@ -373,7 +306,7 @@
       </div>
     </div>
 
-    <!-- MÀN HÌNH 2: TỔNG HỢP LŨY KẾ -->
+    <!-- MÀN HÌNH 2: TỔNG HỢP -->
     <div id="viewSummary" style="display: none;">
       <div class="controls-card" style="background:#eff6ff; border-color:#bfdbfe;">
         <span style="font-weight:600; color:#1e3a8a;"><i class="fa fa-info-circle"></i> BẢNG TỔNG HỢP CỘNG DỒN ĐẾN THỜI ĐIỂM HIỆN TẠI</span>
@@ -399,7 +332,6 @@
         </table>
       </div>
     </div>
-
   </div>
 
   <!-- MODAL: XUẤT EXCEL -->
@@ -424,8 +356,8 @@
         </button>
         <button class="btn btn-outline" style="padding:14px; text-align:left; justify-content:flex-start;" onclick="exportFullBackup()">
           <div>
-            <strong>3. Xuất toàn bộ dữ liệu dự phòng (Backup)</strong>
-            <p style="font-size:0.75rem; color:#64748b; margin-top:2px;">Xuất cả HK1 và HK2 để lưu trữ máy tính hoặc khôi phục khi cần.</p>
+            <strong>3. Xuất toàn bộ dữ liệu dự phòng (JSON Backup)</strong>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:2px;">Tệp lưu trữ an toàn phòng trường hợp muốn khôi phục lại toàn bộ dữ liệu.</p>
           </div>
         </button>
       </div>
@@ -434,19 +366,17 @@
 
   <!-- MODAL: QUẢN LÝ GIÁO VIÊN -->
   <div class="modal-overlay" id="teacherModal">
-    <div class="modal-card" style="max-width:700px;">
+    <div class="modal-card">
       <div class="modal-header">
         <h3><i class="fa fa-user-cog" style="color:var(--primary);"></i> QUẢN LÝ DANH SÁCH GIÁO VIÊN</h3>
         <button class="btn-close" onclick="closeModal('teacherModal')">&times;</button>
       </div>
-
       <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap;">
         <input type="text" id="newTenGV" placeholder="Họ và tên GV" style="flex:2; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
         <input type="text" id="newKiemNhiem" placeholder="Kiêm nhiệm" style="flex:1.5; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
         <input type="number" id="newChuan" placeholder="Chuẩn" value="17" style="width:70px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
         <button class="btn btn-primary" onclick="addTeacher()"><i class="fa fa-plus"></i> Thêm</button>
       </div>
-
       <div class="table-container" style="max-height:350px;">
         <table>
           <thead>
@@ -467,7 +397,7 @@
   <div class="toast-box" id="toastBox"></div>
 
   <script>
-    // --- 1. CẤU HÌNH FIREBASE CLOUD DATABASE ---
+    // --- CẤU HÌNH CLOUD DATABASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyDMcvw3Xz5v5GCUojOeAFq4xnrfLA1LSV8",
       authDomain: "theodoitietdaytoantin.firebaseapp.com",
@@ -483,10 +413,9 @@
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
     } catch (e) {
-      console.warn("Lỗi khởi tạo Firebase:", e);
+      console.warn("Init error:", e);
     }
 
-    // --- 2. DỮ LIỆU BAN ĐẦU ---
     const INITIAL_TEACHERS = [
       { id: 1, name: "Đỗ Ngọc Lâm", role: "Tổ trưởng CM", standard: 17 },
       { id: 2, name: "Nguyễn Thị Cẩm Tú", role: "Không", standard: 17 },
@@ -511,52 +440,102 @@
     let currentTuan = 4;
     let teachers = JSON.parse(localStorage.getItem('teachers_data')) || INITIAL_TEACHERS;
     let semesterData = JSON.parse(localStorage.getItem('semester_records')) || { HK1: {}, HK2: {} };
+    let hasLoadedFromServer = false;
 
-    // --- 3. KHỞI TẠO & ĐỒNG BỘ THỜI GIAN THỰC (FIRESTORE) ---
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       buildTuanOptions();
       renderTable();
-      initFirestoreSync();
+      await fetchLatestData();
     });
 
-    function initFirestoreSync() {
+    // TẢI DỮ LIỆU CHUẨN TỪ CLOUD (TRÁNH BỊ GHI ĐÈ TRẮNG)
+    async function fetchLatestData() {
       const dot = document.getElementById('statusDot');
       const text = document.getElementById('statusText');
 
       if (!db) {
         dot.className = "status-dot error";
-        text.innerText = "Dùng Offline (Chưa kết nối Cloud)";
+        text.innerText = "Dùng Offline (Bộ nhớ máy)";
         return;
       }
 
       dot.className = "status-dot syncing";
-      text.innerText = "Đang kết nối Cloud...";
+      text.innerText = "Đang kiểm tra dữ liệu Cloud...";
 
-      // Lắng nghe dữ liệu thời gian thực từ Firestore
-      db.collection("truong_thpt").doc("du_lieu_so_tiet")
-        .onSnapshot((doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            if (data.teachers) teachers = data.teachers;
-            if (data.semesterData) semesterData = data.semesterData;
+      try {
+        const doc = await db.collection("truong_thpt").doc("du_lieu_so_tiet").get();
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.teachers && data.teachers.length > 0) teachers = data.teachers;
+          if (data.semesterData) semesterData = data.semesterData;
 
+          localStorage.setItem('teachers_data', JSON.stringify(teachers));
+          localStorage.setItem('semester_records', JSON.stringify(semesterData));
+
+          hasLoadedFromServer = true;
+          dot.className = "status-dot";
+          text.innerText = "Đồng bộ đám mây: Trực tuyến";
+          renderTable();
+        } else {
+          // Chưa có gì trên đám mây, tiến hành đẩy dữ liệu khởi tạo
+          await pushDataToCloud();
+          hasLoadedFromServer = true;
+          dot.className = "status-dot";
+          text.innerText = "Đã khởi tạo Cloud thành công";
+        }
+
+        // Bắt đầu lắng nghe thay đổi thời gian thực
+        db.collection("truong_thpt").doc("du_lieu_so_tiet").onSnapshot(snapshot => {
+          if (snapshot.exists && hasLoadedFromServer) {
+            const d = snapshot.data();
+            if (d.semesterData) semesterData = d.semesterData;
+            if (d.teachers) teachers = d.teachers;
             localStorage.setItem('teachers_data', JSON.stringify(teachers));
             localStorage.setItem('semester_records', JSON.stringify(semesterData));
-
-            dot.className = "status-dot";
-            text.innerText = "Đồng bộ đám mây: Trực tuyến";
             renderTable();
-          } else {
-            // Lần đầu khởi tạo dữ liệu lên server
-            saveData(false);
-            dot.className = "status-dot";
-            text.innerText = "Đã khởi tạo Cloud";
           }
-        }, (err) => {
-          console.error("Firestore Listen Error: ", err);
-          dot.className = "status-dot error";
-          text.innerText = "Mất kết nối Cloud (Lưu bộ nhớ tạm)";
         });
+
+      } catch (err) {
+        console.error("Lỗi đọc dữ liệu Cloud:", err);
+        dot.className = "status-dot error";
+        text.innerText = "Mất mạng - Dùng bộ nhớ tạm";
+      }
+    }
+
+    async function pushDataToCloud() {
+      if (!db) return;
+      return db.collection("truong_thpt").doc("du_lieu_so_tiet").set({
+        teachers: teachers,
+        semesterData: semesterData,
+        lastUpdated: new Date().toISOString()
+      });
+    }
+
+    async function saveDataManual() {
+      localStorage.setItem('teachers_data', JSON.stringify(teachers));
+      localStorage.setItem('semester_records', JSON.stringify(semesterData));
+
+      if (db) {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        dot.className = "status-dot syncing";
+        text.innerText = "Đang lưu lên Cloud...";
+
+        try {
+          await pushDataToCloud();
+          dot.className = "status-dot";
+          text.innerText = "Đồng bộ đám mây: Trực tuyến";
+          showToast("Đã lưu dữ liệu thành công lên hệ thống chung!", "success");
+        } catch (e) {
+          console.error(e);
+          dot.className = "status-dot error";
+          text.innerText = "Lỗi lưu đám mây";
+          showToast("Không thể lưu lên Cloud. Đã lưu tạm vào máy!", "error");
+        }
+      } else {
+        showToast("Đã lưu vào bộ nhớ trình duyệt.", "info");
+      }
     }
 
     function buildTuanOptions() {
@@ -622,7 +601,6 @@
       }
     }
 
-    // --- 4. TÍNH CỘNG DỒN LŨY KẾ ---
     function getCumulativeData(teacherId, upToTuan) {
       let totalDay = 0;
       let totalThuaThieu = 0;
@@ -651,7 +629,6 @@
       return { totalDay, totalThuaThieu };
     }
 
-    // --- 5. RENDER BẢNG NHẬP SỐ TIẾT ---
     function renderTable() {
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = '';
@@ -673,7 +650,6 @@
 
         const tong = kn + tkb + hsg + tn + thay + khac - tru;
         const thuaThieu = tong - t.standard;
-
         const cum = getCumulativeData(t.id, currentTuan);
 
         const badgeClass = thuaThieu > 0 ? 'badge-thua' : (thuaThieu < 0 ? 'badge-thieu' : 'badge-du');
@@ -711,10 +687,11 @@
         semesterData[currentHK][currentTuan][teacherId] = { kn:'', tkb:'', hsg:'', tn:'', thay:'', khac:'', tru:'', note:'' };
       }
       semesterData[currentHK][currentTuan][teacherId][field] = value;
+      // Tự động lưu cục bộ ngay khi gõ
+      localStorage.setItem('semester_records', JSON.stringify(semesterData));
       renderTable();
     }
 
-    // --- 6. RENDER BẢNG TỔNG HỢP ---
     function renderSummaryTable() {
       const tbody = document.getElementById('summaryTableBody');
       tbody.innerHTML = '';
@@ -745,38 +722,6 @@
       });
     }
 
-    // --- 7. LƯU DỮ LIỆU LÊN FIRESTORE & LOCALSTORAGE ---
-    async function saveData(showToastMsg = true) {
-      localStorage.setItem('teachers_data', JSON.stringify(teachers));
-      localStorage.setItem('semester_records', JSON.stringify(semesterData));
-
-      if (db) {
-        const dot = document.getElementById('statusDot');
-        const text = document.getElementById('statusText');
-        dot.className = "status-dot syncing";
-        text.innerText = "Đang lưu lên Cloud...";
-
-        try {
-          await db.collection("truong_thpt").doc("du_lieu_so_tiet").set({
-            teachers: teachers,
-            semesterData: semesterData,
-            lastUpdated: new Date().toISOString()
-          });
-          dot.className = "status-dot";
-          text.innerText = "Đồng bộ đám mây: Trực tuyến";
-          if (showToastMsg) showToast("Đã lưu dữ liệu thành công lên hệ thống chung!", "success");
-        } catch (e) {
-          console.error(e);
-          dot.className = "status-dot error";
-          text.innerText = "Lỗi lưu đám mây";
-          if (showToastMsg) showToast("Không thể lưu lên Cloud. Đã lưu tạm vào máy!", "error");
-        }
-      } else {
-        if (showToastMsg) showToast("Đã lưu vào bộ nhớ trình duyệt.", "info");
-      }
-    }
-
-    // --- 8. QUẢN LÝ DANH SÁCH GIÁO VIÊN ---
     function openTeacherModal() {
       renderTeacherList();
       document.getElementById('teacherModal').style.display = 'flex';
@@ -813,16 +758,16 @@
       document.getElementById('newKiemNhiem').value = '';
       renderTeacherList();
       renderTable();
-      saveData(false);
+      saveDataManual();
       showToast("Đã thêm giáo viên thành công!", "success");
     }
 
     function deleteTeacher(id) {
-      if (confirm("Thầy/cô có chắc muốn xóa giáo viên này khỏi danh sách?")) {
+      if (confirm("Thầy/cô có chắc muốn xóa giáo viên này?")) {
         teachers = teachers.filter(t => t.id !== id);
         renderTeacherList();
         renderTable();
-        saveData(false);
+        saveDataManual();
       }
     }
 
@@ -834,10 +779,9 @@
       teachers[newIdx] = temp;
       renderTeacherList();
       renderTable();
-      saveData(false);
+      saveDataManual();
     }
 
-    // --- 9. XUẤT EXCEL (3 SHEET CHUẨN) ---
     function openExcelModal() { document.getElementById('excelModal').style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -885,7 +829,6 @@
       const wb = XLSX.utils.book_new();
       const maxTuans = currentHK === 'HK1' ? 20 : 19;
 
-      // SHEET 1: TỔNG HỢP
       const s1Data = [
         ["BẢNG TỔNG HỢP TIẾT DẠY LŨY KẾ TOÀN HỌC KỲ", "", "", "", `${currentHK}`],
         ["TT", "Giáo viên", "Kiêm nhiệm", "Chuẩn/tuần", "Tổng chuẩn học kỳ", "Tổng đã dạy", "Tổng Thừa/Thiếu", "Tỉ lệ hoàn thành"]
@@ -899,7 +842,6 @@
       const ws1 = XLSX.utils.aoa_to_sheet(s1Data);
       XLSX.utils.book_append_sheet(wb, ws1, "TONG_HOP");
 
-      // SHEET 2: CHI TIẾT THEO TUẦN
       const s2Data = [
         ["Giáo viên", "Học kỳ", "Tuần", "Tiết KN", "Tiết TKB", "BD HSG", "Ôn thi TN", "Dạy thay", "Khác", "Bị trừ", "Tổng", "Thừa/Thiếu", "Ghi chú"]
       ];
@@ -922,7 +864,6 @@
       const ws2 = XLSX.utils.aoa_to_sheet(s2Data);
       XLSX.utils.book_append_sheet(wb, ws2, "CHI_TIET_TUAN");
 
-      // SHEET 3: BẢNG THEO TUẦN ĐANG XEM
       const s3Data = [
         [`BẢNG THEO DÕI TIẾT DẠY TUẦN ${currentTuan}`, "", "", "", "", `${currentHK}`],
         ["TT", "Giáo viên", "Kiêm nhiệm", "Chuẩn", "Tiết KN", "Tiết TKB", "BD HSG", "Ôn thi tn", "Dạy thay", "Khác", "Bị trừ", "Tổng", "Thừa/Thiếu", "Ghi chú"]
@@ -960,7 +901,6 @@
       showToast("Đã xuất tệp sao lưu an toàn!", "success");
     }
 
-    // --- 10. NHẬP EXCEL & KHÔI PHỤC ---
     function importExcelFile(input) {
       const file = input.files[0];
       if (!file) return;
@@ -1001,7 +941,7 @@
           }
 
           renderTable();
-          saveData(true);
+          saveDataManual();
           showToast("Nhập dữ liệu từ Excel thành công!", "success");
         } catch (err) {
           console.error(err);
